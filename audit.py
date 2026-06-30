@@ -51,21 +51,21 @@ def append_audit_entry(entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def log_attribution_decision(
-    submission_id: str,
+    content_id: str,
     content_preview: str,
     result: str,
     confidence: float,
     label_type: str,
     label_text: str,
-    signals: list[dict[str, Any]],
+    signals: dict[str, Any],
     status: str = "classified",
 ) -> dict[str, Any]:
     """
     Log an attribution decision from the analysis pipeline.
     """
     entry = {
-        "event_type": "attribution_decision",
-        "submission_id": submission_id,
+        "event_type": "content_classified",
+        "content_id": content_id,
         "content_preview": content_preview[:200],
         "result": result,
         "confidence": confidence,
@@ -80,7 +80,7 @@ def log_attribution_decision(
 
 def log_appeal(
     appeal_id: str,
-    submission_id: str,
+    content_id: str,
     creator_reasoning: str,
     original_result: str,
     original_confidence: float,
@@ -92,7 +92,7 @@ def log_appeal(
     entry = {
         "event_type": "appeal_submitted",
         "appeal_id": appeal_id,
-        "submission_id": submission_id,
+        "content_id": content_id,
         "creator_reasoning": creator_reasoning,
         "original_result": original_result,
         "original_confidence": original_confidence,

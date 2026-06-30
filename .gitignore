@@ -217,3 +217,16 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+
+
+# Runtime data / local JSONL stores
+data/*.jsonl
+logs/*.jsonl
+
+# Keep folders
+!data/.gitkeep
+!logs/.gitkeep
+
+# Python cache
+__pycache__/
+*.pyc

@@ -72,28 +72,28 @@ def append_jsonl(file_path: str, record: dict[str, Any]) -> None:
         file.write(json.dumps(record) + "\n")
 
 
-def find_submission(submission_id: str) -> dict[str, Any] | None:
+def find_content(content_id: str) -> dict[str, Any] | None:
     """
-    Find a submission by ID.
+    Find submitted content by content ID.
     """
     submissions = read_jsonl(SUBMISSIONS_FILE)
 
     for submission in submissions:
-        if submission.get("submission_id") == submission_id:
+        if submission.get("content_id") == content_id:
             return submission
 
     return None
 
 
-def update_submission_status(submission_id: str, new_status: str) -> dict[str, Any] | None:
+def update_content_status(content_id: str, new_status: str) -> dict[str, Any] | None:
     """
-    Update a submission's status in the submissions JSONL file.
+    Update a submitted content record's status in the submissions JSONL file.
     """
     submissions = read_jsonl(SUBMISSIONS_FILE)
     updated_submission = None
 
     for submission in submissions:
-        if submission.get("submission_id") == submission_id:
+        if submission.get("content_id") == content_id:
             submission["status"] = new_status
             submission["updated_at"] = current_timestamp()
             updated_submission = submission
@@ -107,7 +107,7 @@ def update_submission_status(submission_id: str, new_status: str) -> dict[str, A
     return updated_submission
 
 
-def submit_appeal(submission_id: str, creator_reasoning: str) -> dict[str, Any]:
+def submit_appeal(content_id: str, creator_reasoning: str) -> dict[str, Any]:
     """
     Submit an appeal for a classification decision.
 
@@ -121,33 +121,33 @@ def submit_appeal(submission_id: str, creator_reasoning: str) -> dict[str, Any]:
     if not creator_reasoning:
         raise ValueError("Appeal reasoning is required.")
 
-    original_submission = find_submission(submission_id)
+    original_submission = find_content(content_id)
 
     if original_submission is None:
         raise ValueError("Submission not found.")
 
     appeal_id = str(uuid.uuid4())
 
-    updated_submission = update_submission_status(
-        submission_id=submission_id,
+    updated_submission = update_content_status(
+        content_id=content_id,
         new_status="under_review",
     )
 
     appeal_record = {
         "appeal_id": appeal_id,
-        "submission_id": submission_id,
+        "content_id": content_id,
         "creator_reasoning": creator_reasoning,
         "status": "under_review",
         "created_at": current_timestamp(),
-        "original_result":original_submission.get("result", "unknown"),
-        "original_confidence":original_submission.get("confidence", 0.0),
+        "original_result": original_submission.get("result", "unknown"),
+        "original_confidence": original_submission.get("confidence", 0.0),
     }
 
     append_jsonl(APPEALS_FILE, appeal_record)
 
     audit_entry = log_appeal(
         appeal_id=appeal_id,
-        submission_id=submission_id,
+        content_id=content_id,
         creator_reasoning=creator_reasoning,
         original_result=original_submission.get("result", "unknown"),
         original_confidence=original_submission.get("confidence", 0.0),
@@ -156,6 +156,6 @@ def submit_appeal(submission_id: str, creator_reasoning: str) -> dict[str, Any]:
 
     return {
         "appeal": appeal_record,
-        "submission": updated_submission,
+        "content": updated_submission,
         "audit_entry": audit_entry,
     }

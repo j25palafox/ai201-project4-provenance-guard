@@ -201,7 +201,7 @@ def analyze_content(content: str) -> dict:
     """
     Run the full multi-signal detection pipeline.
 
-    This is the main function app.py should call from POST /analyze.
+    This is the main function app.py should call from POST /submit.
     """
     llm_signal = analyze_with_llm(content)
     stylometric_signal = analyze_with_stylometry(content)

@@ -3,18 +3,18 @@ def get_transparency_label(result: str) -> str:
     Return the reader-facing transparency label for an attribution result.
 
     result should be one of:
-    - "ai_generated"
-    - "human_created"
+    - "likely_ai"
+    - "likely_human"
     - "uncertain"
     """
 
     labels = {
-        "ai_generated": (
+        "likely_ai": (
             "Provenance Guard found strong signals that this text was likely generated "
             "or heavily shaped by AI. This label is based on automated analysis and may "
             "be appealed by the creator."
         ),
-        "human_created": (
+        "likely_human": (
             "Provenance Guard found strong signals that this text was likely written "
             "primarily by a person. This label is based on automated analysis and is "
             "not a guarantee of authorship."

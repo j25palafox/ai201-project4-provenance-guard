@@ -20,7 +20,7 @@ flowchart TD
     end
 
     subgraph API["Flask API Layer"]
-        C[POST /analyze]
+        C[POST /submit]
         D[Rate limiting]
         E[Input validation]
     end
@@ -42,7 +42,7 @@ flowchart TD
     end
 
     subgraph Appeals["Creator Appeals Workflow"]
-        M[POST /appeals]
+        M[POST /appeal]
         N[Capture creator reasoning]
         O[Mark content under_review]
         P[Log appeal event]
@@ -73,7 +73,7 @@ After validation, the content is passed to the multi-signal detection pipeline. 
 
 The confidence scoring engine combines both signals into a final attribution result. The system does not force every submission into a binary label. Instead, it returns one of three outcomes: high-confidence AI, high-confidence human, or uncertain. The confidence score determines which label is shown. A 0.95 confidence result should produce a much stronger label than a 0.51 result.
 
-After scoring, the transparency label generator creates plain-language text that a creative platform could display to readers. The API response includes the raw classification result, confidence score, signal details, transparency label, and content status.
+After scoring, the transparency label generator creates plain-language text that a creative platform could display to readers. The API response includes the attribution result, confidence score, final AI-likelihood score, signal details, transparency label, submission ID, and content status.
 
 Every decision is written to a structured audit log. The log includes the content ID, timestamp, attribution result, confidence score, signals used, signal outputs, label text, and status. This makes the system accountable and reviewable after deployment.
 
@@ -89,8 +89,8 @@ The Flask API exposes the endpoints that external platforms use.
 
 Required endpoints:
 
-* `POST /analyze`
-* `POST /appeals`
+* `POST /submit`
+* `POST /appeal`
 * `GET /log`
 
 Optional helper endpoint:
@@ -124,8 +124,8 @@ The submission endpoint is rate limited to reduce abuse and control API cost.
 Chosen limits:
 
 ```text
-POST /analyze: 10 requests per minute per client IP
-POST /appeals: 5 requests per minute per client IP
+POST /submit: 10 requests per minute per client IP
+POST /appeal: 5 requests per minute per client IP
 GET /log: 30 requests per minute per client IP
 ```
 
@@ -317,7 +317,7 @@ Every attribution decision and appeal should be written to a structured audit lo
 Log format:
 
 ```text
-logs/audit.jsonl
+logs/audit_log.jsonl
 ```
 
 Each line is one JSON object.
@@ -423,6 +423,67 @@ Test cases:
 
 ---
 
+## AI Tool Plan
+
+This planning document will be used as the reference spec when generating implementation code with AI tools. Each implementation milestone will use only the relevant sections of this document so the generated code stays aligned with the architecture.
+
+### M3 — Submission Endpoint + First Signal
+
+Spec sections to provide to the AI tool:
+
+* Architecture
+* Submission Flow Narrative
+* Core Components
+* Signal 1: Groq LLM Attribution Judge
+* Audit Logging
+
+Request to AI tool:
+
+Generate a Flask app skeleton with a `POST /submit` endpoint. The endpoint should validate incoming text content, call the first detection signal function, return a structured JSON response, and write a decision event to the audit log. Also generate the first signal function for the Groq LLM attribution judge.
+
+Verification plan:
+
+Before wiring everything together, test the Groq signal function directly with a few inputs: one clearly AI-like passage, one more human-like creative passage, and one very short or ambiguous passage. Confirm that the signal returns an `ai_likelihood`, `human_likelihood`, and `reason` in the expected format.
+
+### M4 — Second Signal + Confidence Scoring
+
+Spec sections to provide to the AI tool:
+
+* Architecture
+* Multi-Signal Detection Pipeline
+* Signal 2: Stylometric Heuristics
+* Confidence Scoring Approach
+* Testing Plan
+
+Request to AI tool:
+
+Generate the stylometric heuristic signal and the confidence scoring logic. The stylometric signal should calculate features such as average sentence length, sentence length variance, vocabulary diversity, repetition rate, and punctuation variety. The scoring logic should combine the LLM signal and stylometric signal using the planned weighted formula.
+
+Verification plan:
+
+Test the scoring logic directly with known input values. Confirm that scores around `0.95` and `0.77` produce `high_confidence_ai`, scores around `0.51` produce `uncertain`, and scores around `0.24` or `0.05` produce `high_confidence_human`. Also test whether clearly AI-like and clearly human-like samples produce meaningfully different scores.
+
+### M5 — Production Layer
+
+Spec sections to provide to the AI tool:
+
+* Architecture
+* Transparency Label Design
+* Appeal Workflow
+* Audit Logging
+* Rate Limiter
+* Testing Plan
+
+Request to AI tool:
+
+Generate label generation logic, rate limiting, the `POST /appeal` endpoint, and the `GET /log` endpoint. The appeal endpoint should capture creator reasoning, link the appeal to the original submission, update the content status to `under_review`, and write an appeal event to the audit log.
+
+Verification plan:
+
+Test that all three label variants are reachable by passing scores that produce high-confidence AI, high-confidence human, and uncertain results. Submit an appeal for an existing submission and confirm that the content status changes to `under_review`. Confirm that both the original decision and the appeal appear in the structured audit log.
+
+---
+
 ## Implementation Notes
 
 To be completed after implementation:
@@ -430,8 +491,8 @@ To be completed after implementation:
 * Final endpoints implemented:
 * Final rate limits used:
 * Final signal weights used:
-* Example `/analyze` response:
-* Example `/appeals` response:
+* Example `/submit` response:
+* Example `/appeal` response:
 * Three audit log entries:
 * One surprising classification:
 * One change made after testing:
