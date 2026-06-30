@@ -67,11 +67,11 @@ Example response:
   "label_type": "high_confidence_ai",
   "transparency_label": "Provenance Guard found strong signals that this text was likely generated or heavily shaped by AI. This label is based on automated analysis and may be appealed by the creator.",
   "signals": {
-    "llm_judge": {
+    "llm_signal": {
       "score": 0.94,
       "explanation": "The text uses broad, polished, generalized phrasing often associated with AI-generated writing."
     },
-    "stylometry": {
+    "stylometric_signal": {
       "score": 0.78,
       "explanation": "The text has highly consistent sentence structure and low variation."
     }
@@ -297,6 +297,28 @@ The appeal endpoint has a lower limit because appeals should be much lower volum
 
 The log endpoint is cheaper, so it allows more requests. Thirty requests per minute is enough for testing and demonstration without leaving the endpoint completely unrestricted.
 
+### Rate Limit Testing
+
+To verify rate limiting, I sent repeated requests to `/submit` within one minute. The first 9 requests succeeded with `200 OK`. Additional requests in the same one-minute window returned `429 Too Many Requests`. This was due to making a submission in the same one minute window used during testing.
+
+Example Flask output:
+
+```text
+127.0.0.1 - - [30/Jun/2026 14:46:57] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:16] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:17] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:17] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:18] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:18] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:19] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:19] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:19] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:20] "POST /submit HTTP/1.1" 200 -
+127.0.0.1 - - [30/Jun/2026 14:47:20] "POST /submit HTTP/1.1" 429 -
+127.0.0.1 - - [30/Jun/2026 14:47:20] "POST /submit HTTP/1.1" 429 -
+127.0.0.1 - - [30/Jun/2026 14:47:20] "POST /submit HTTP/1.1" 429 -
+```
+
 ---
 
 ## Structured Audit Log
@@ -430,22 +452,3 @@ curl http://127.0.0.1:5000/log
 ```
 
 ---
-
-## Portfolio Walkthrough Notes
-
-For the walkthrough video, I briefly show the app running end-to-end:
-
-1. Start the Flask server.
-2. Submit a piece of text to `/submit`.
-3. Show the structured response with result, confidence, signals, and transparency label.
-4. Submit an appeal for that content.
-5. Show that the content status changes to `under_review`.
-6. Show the audit log with classification and appeal entries.
-7. Briefly explain the design decisions:
-
-   * Why I used two detection signals
-   * Why confidence scoring has an uncertain middle range
-   * Why transparency labels avoid claiming certainty
-   * Why appeals are logged instead of automatically reversing decisions
-
-The walkthrough is intentionally short and focused on the working system.
